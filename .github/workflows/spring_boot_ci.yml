@@ -45,5 +45,5 @@ jobs:
       # Si vous utilisiez un outil comme SonarQube, ce serait l'étape ici.
       - name: 5. Affichage du Résultat du Build
         if: always()
-        run:
+        run: |
           echo "Le pipeline CI est terminé. Statut du build : ${{ job.status }}"
