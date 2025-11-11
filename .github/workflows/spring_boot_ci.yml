@@ -1,0 +1,48 @@
+name: Microservice Spring Boot - Intégration Continue (CI)
+
+# 1. Déclencheurs (Triggers)
+# Le CI se lance à chaque push et sur chaque Pull Request vers la branche 'main'.
+on:
+  push:
+    branches: [ "main", "develop", "feature/**" ] # Exécuter sur les branches principales et de feature
+  pull_request:
+    branches: [ "main", "develop" ] # Exécuter sur les PR vers les branches stables
+
+# 2. Définition des Tâches (Jobs)
+jobs:
+  build_and_test:
+    name: Build, Test et Qualité du Code
+    runs-on: ubuntu-latest # Utilise la dernière version d'Ubuntu pour l'exécution
+
+    steps:
+      # --- Étape 1 : Préparation de l'Environnement ---
+      - name: 1. Checkout du Code
+        uses: actions/checkout@v4
+
+      - name: 2. Configuration du JDK 17 (Nécessaire pour Spring Boot)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven' # Mise en cache des dépendances Maven pour accélérer la CI
+
+      # --- Étape 2 : Le Cœur de la CI (Build et Tests) ---
+      # Cette commande exécute la compilation et lance tous les tests (unitaires & intégration).
+      # L'option -DskipTests=false garantit que les tests s'exécutent.
+      - name: 3. Exécution du Build et des Tests
+        run: mvn clean install -DskipTests=false
+
+      # --- Étape 3 : Gestion de l'Artefact (Prêt pour le CD) ---
+      # Télécharge l'artefact (le fichier JAR) pour le rendre disponible aux étapes futures du CD.
+      - name: 4. Téléversement de l'Artefact (.JAR)
+        uses: actions/upload-artifact@v4
+        with:
+          name: spring-boot-microservice-jar
+          path: target/*.jar # Répertoire de sortie typique de Maven
+          retention-days: 1 # Garder l'artefact pendant un jour (pour les tests rapides)
+
+      # --- Étape 4 (BONUS) : Contrôle de Qualité ---
+      # Si vous utilisiez un outil comme SonarQube, ce serait l'étape ici.
+      - name: 5. Affichage du Résultat du Build
+        if: always()
+        run: echo "Le pipeline CI est terminé. Statut du build : ${{ job.status }}"
