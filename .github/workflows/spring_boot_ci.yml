@@ -33,7 +33,7 @@ jobs:
         run: mvn clean install -DskipTests=false
 
       # --- Étape 3 : Gestion de l'Artefact (Prêt pour le CD) ---
-      # Télécharge l'artefact (le fichier JAR) pour le rendre disponible aux étapes futures du CD.
+      # Télécharge l'artefact (le fichier JAR) pour le rendre disponible aux étapes futures du CD. 
       - name: 4. Téléversement de l'Artefact (.JAR)
         uses: actions/upload-artifact@v4
         with:
