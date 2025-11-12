@@ -66,8 +66,16 @@ jobs:
       - name: 3. Définition des Variables de Tag
         id: vars
         run: |
-          REPO_NAME=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
-          IMAGE_NAME=${{ secrets.DOCKER_USERNAME }}/${REPO_NAME}
+          # 1. Récupère le nom du dépôt GitHub (ex: bones0xab/testing-is-everything)
+          REPO_SLUG=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
+          
+          # 2. Extrait seulement le nom du projet (ex: testing-is-everything)
+          # Utilisation de awk pour garantir que le nom est propre
+          SIMPLE_REPO_NAME=$(echo $REPO_SLUG | awk -F/ '{print $2}')
+          
+          # 3. CONSTRUIT LE TAG CORRECT : DOCKER_USERNAME / SIMPLE_REPO_NAME
+          # C'est la ligne qui résout l'erreur 'denied' : on utilise le DOCKER_USERNAME (0xbones1)
+          IMAGE_NAME=${{ secrets.DOCKER_USERNAME }}/${SIMPLE_REPO_NAME}
           TAG_SHA=sha-${{ github.sha }}
           
           echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_OUTPUT
