@@ -33,7 +33,7 @@ jobs:
         run: mvn clean install -DskipTests=false
 
       # --- Étape 3 : Gestion de l'Artefact (Prêt pour le CD) ---
-      # Télécharge l'artefact (le fichier JAR) pour le rendre disponible aux étapes futures du CD. 
+      # Télécharge l'artefact (le fichier JAR) pour le rendre disponible aux étapes futures du CD.
       - name: 4. Téléversement de l'Artefact (.JAR)
         uses: actions/upload-artifact@v4
         with:
@@ -47,3 +47,42 @@ jobs:
         if: always()
         run: |
           echo "Le pipeline CI est terminé. Statut du build : ${{ job.status }}"
+  # --- JOB 2: CONSTRUCTION ET PUSH DE L'IMAGE DOCKER (CD) ---
+  build_and_push_docker:
+    name: 2. Construction et Push de l'Image Docker
+    runs-on: ubuntu-latest
+    needs: build_and_test # Dépendance : Doit attendre le succès du job précédent
+
+    steps:
+      - name: 1. Checkout du Code
+        uses: actions/checkout@v4
+
+      - name: 2. Connexion à Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: 3. Définition des Variables de Tag
+        id: vars
+        run: |
+          REPO_NAME=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
+          IMAGE_NAME=${{ secrets.DOCKER_USERNAME }}/${REPO_NAME}
+          TAG_SHA=sha-${{ github.sha }}
+          
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_OUTPUT
+          echo "TAG_SHA=$TAG_SHA" >> $GITHUB_OUTPUT
+
+      - name: 4. Construction et Push de l'Image
+        uses: docker/build-push-action@v5
+        with:
+          context: . # Utiliser le répertoire courant pour la construction
+          file: ./Dockerfile # Utiliser le Dockerfile que vous avez créé à la racine
+          push: true
+          tags: |
+            ${{ steps.vars.outputs.IMAGE_NAME }}:latest
+            ${{ steps.vars.outputs.IMAGE_NAME }}:${{ steps.vars.outputs.TAG_SHA }}
+
+      - name: 5. Affichage du Statut du Push
+        if: success()
+        run: echo "Image Docker poussée avec succès sur Docker Hub."
